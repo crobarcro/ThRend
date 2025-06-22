@@ -26,7 +26,10 @@
 #include "ONB.h"
 #include <chrono>  // for high_resolution_clock
 
+#ifdef _WIN32
 #include <windows.h>
+#include <process.h>
+#endif
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
@@ -42,8 +45,6 @@
 #include <time.h>       /* time */
 //MATLAB
  
-#include <windows.h>
-#include <process.h> 
 #include "FreeImage.h"
 #include "EmbreeUtils.h"
 #include "settingsLoader.h"
