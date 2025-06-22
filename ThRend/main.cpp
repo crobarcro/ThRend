@@ -332,6 +332,8 @@ void generateThermography(float*tsky, std::vector<int> &matIDs, settings &s, mat
 		}
 	}
 
+        std::cout << "Saving tempData \n";
+
 	saveData(tempData, width, height);
 	//SAVE IMAGE
 	std::stringstream ss1;
@@ -345,6 +347,8 @@ void generateThermography(float*tsky, std::vector<int> &matIDs, settings &s, mat
 
 	std::stringstream ss4;
 	ss4 << "../results/emis.png";
+
+        std::cout << "Saving  images\n";
 
 	saveImage(reColors, width, height, ss1.str());
 	saveImage(apColors, width, height, ss2.str());
