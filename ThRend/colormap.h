@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <filesystem>
 
 using namespace std;
 using namespace glm;
@@ -26,7 +27,7 @@ float tmax;
 float tmin_reflected ;
 float tmax_reflected ;
 
-void loadColormapFromFile(string file){
+void loadColormapFromFile(const std::filesystem::path& file){
 	std::ifstream ifs(file);
 	glm::vec3 c;
 

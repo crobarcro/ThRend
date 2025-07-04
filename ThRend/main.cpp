@@ -52,6 +52,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 const float STE_BOLZ = 5.670367e-08;
 const int NUMTHREADS = 8;
@@ -61,23 +62,23 @@ std::mutex ffLock;
 int totalProcessed = 0;
 int omp_get_thread_num();
 
-void saveImage(RGBQUAD *cs, int width, int height, std::string file) {
+void saveImage(RGBQUAD *cs, int width, int height, const std::filesystem::path& file) {
 	FreeImage_Initialise();
 	FIBITMAP* bitmap = FreeImage_Allocate(width, height, 24);
 	if (bitmap == NULL)
 		exit(1);
 	for (int i = 0; i<width; i++)
 		for (int j = 0; j<height; j++)
-			//			FreeImage_SetPixelColor(bitmap, (width-1)-i, (height-1)-j, &cs[i*height + j]);
 			FreeImage_SetPixelColor(bitmap, i, j, &cs[i*height + j]);
 
-	if (!FreeImage_Save(FIF_PNG, bitmap, file.c_str(), 0)) // El ultimo parametro son flags. Dejar siempre en 0.
+	if (!FreeImage_Save(FIF_PNG, bitmap, file.string().c_str(), 0))
 		exit(1);
 	FreeImage_DeInitialise();
 }
 
 void saveData(float* data, int width, int height){
-	std::ofstream ffs_file("../results/temps");
+	std::filesystem::path outpath = std::filesystem::path("../results/temps");
+	std::ofstream ffs_file(outpath);
 	for (int i = 0; i<width; ++i) {
 		for (int j = 0; j<height; ++j)
 			ffs_file << data[i*height + j] << ' ';
@@ -363,43 +364,35 @@ void generateThermography(float*tsky, std::vector<int> &matIDs, settings &s, mat
 	delete diffColors;
 };
 
-float* loadSkyTemp(string file){
+float* loadSkyTemp(const std::filesystem::path& file){
 	float* tsky = (float*)malloc(sizeof(float)*10);
-
 	std::ifstream ifs(file);
-
 	for (int j = 0; j < 10; j++){
 		ifs >> tsky[j];
 	}
 	std::cout << "Sky temps loaded successfully...\n";
-
 	return tsky;
 }
 
 int main(){
+	using std::filesystem::path;
 	std::vector<glm::vec3> sc_vertices;
 	std::vector<int> sc_triangles;
 	std::vector<int> sc_quads;
 	std::vector<int> matIDs;
 	std::vector<float> temps;
-	settings s = loadSettings("..\\viewSettings");
-
-	load_UCD(("..\\" + s.sceneFile), sc_vertices, sc_triangles, sc_quads, matIDs, temps);
+	settings s = loadSettings(path("../viewSettings"));
+	load_UCD(path("../") / s.sceneFile, sc_vertices, sc_triangles, sc_quads, matIDs, temps);
 	buildSceneEmbree(sc_vertices, sc_triangles, sc_quads, matIDs, temps);
-
-	loadColormapFromFile(("..\\" + s.colormapFile));
-	float* tsky = loadSkyTemp(("..\\" + s.skyTempsFile));
+	loadColormapFromFile(path("../") / s.colormapFile);
+	float* tsky = loadSkyTemp(path("../") / s.skyTempsFile);
 	tmin = s.tmin; tmax = s.tmax;
 	tmin_reflected = s.tmin_reflected; tmax_reflected = s.tmax_reflected;
-
 	NRAYS_GLOSSY = s.reflSamples;
 	MAX_BOUNCES = s.MAX_BOUNCES;
-
-	material* matProps = loadMaterials("..\\materials");
-	//printMaterials(matProps);
-
+	material* matProps = loadMaterials(path("../materials"));
 	generateThermography(tsky, matIDs, s,matProps);
 	int i;
-	cin >> i;
+	std::cin >> i;
 	return 0;
 }

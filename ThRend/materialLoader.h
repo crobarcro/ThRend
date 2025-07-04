@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iostream>
 #include <cmath>
+#include <filesystem>
 
 
 using namespace std;
@@ -43,10 +44,10 @@ float * computeEmissivityCurve(material m){
 }
 
 
-material* loadMaterials(std::string filename){
+material* loadMaterials(const std::filesystem::path& filename){
 	material* matProps = (material*)malloc(sizeof(material) * 64);
 	material m; m.UCD_id = -1; m.custom = false;
-	ifstream file(filename.c_str());
+	ifstream file(filename);
 
 	cout << "Loading file " << filename << " \n";
 	string line;

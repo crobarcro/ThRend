@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <filesystem>
 
 using namespace std;
 using namespace glm;
@@ -31,8 +32,8 @@ typedef struct{
 } settings;
 
 
-settings loadSettings(std::string filename){
-	ifstream file(filename.c_str());
+settings loadSettings(const std::filesystem::path& filename){
+	ifstream file(filename);
 	cout << "Loading file " << filename << " \n";
 	string line;
 	settings s;

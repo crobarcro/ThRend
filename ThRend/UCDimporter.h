@@ -7,18 +7,19 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <filesystem>
 
 using namespace std;
 using namespace glm;
 
 
-int load_UCD(std::string filename, 
+int load_UCD(const std::filesystem::path& filename, 
 std::vector<vec3> &sc_vertices, 
 std::vector<int> &sc_triangles, 
 std::vector<int> &sc_quads, 
 std::vector<int> &matIDs,
 std::vector<float> &temps){
-	ifstream file(filename.c_str());
+	ifstream file(filename);
 	cout << "Loading file " << filename << " \n";
 
 	if (!file) 
