@@ -124,6 +124,8 @@ void generateThermography(float*tsky, std::vector<int> &matIDs, settings &s, mat
 	int countMAL = 0;
 	int countBIEN = 0;
 	totalProcessed = 0;
+	int totalIntersections = 0;
+	int successfulIntersections = 0;
 
 	//Beckers subdivision for the case of diffuse reflection
 	float rings = ceil((-1 + sqrt(NRAYS_GLOSSY)) / 2);
@@ -190,6 +192,20 @@ void generateThermography(float*tsky, std::vector<int> &matIDs, settings &s, mat
 
 					float t = 0;
 					float aparentT = 0;
+					
+					// Debug: Track intersection statistics
+					ffLock.lock();
+					totalIntersections++;
+					if (query.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
+						successfulIntersections++;
+					}
+					// Print statistics every 1000 intersections
+					if (totalIntersections % 1000 == 0) {
+						std::cout << "Intersection stats: " << successfulIntersections << "/" << totalIntersections 
+						          << " (" << (100.0f * successfulIntersections / totalIntersections) << "%)" << std::endl;
+					}
+					ffLock.unlock();
+					
 					if (query.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
 						int globalID = query.hit.primID;
 						if (query.hit.geomID == quadID)
@@ -382,8 +398,42 @@ int main(){
 	std::vector<int> matIDs;
 	std::vector<float> temps;
 	settings s = loadSettings(path("../viewSettings"));
+	
+	std::cout << "Loading scene file: " << (path("../") / s.sceneFile) << std::endl;
 	load_UCD(path("../") / s.sceneFile, sc_vertices, sc_triangles, sc_quads, matIDs, temps);
+	
+	std::cout << "Loaded geometry:" << std::endl;
+	std::cout << "  Vertices: " << sc_vertices.size() << std::endl;
+	std::cout << "  Triangles: " << sc_triangles.size() / 3 << std::endl;
+	std::cout << "  Quads: " << sc_quads.size() / 4 << std::endl;
+	std::cout << "  Materials: " << matIDs.size() << std::endl;
+	std::cout << "  Temperatures: " << temps.size() << std::endl;
+	
 	buildSceneEmbree(sc_vertices, sc_triangles, sc_quads, matIDs, temps);
+	
+	// Check if scene has geometry
+	RTCBounds bounds;
+	rtcGetSceneBounds(eScene, &bounds);
+	std::cout << "Scene bounds: [" << bounds.lower_x << ", " << bounds.lower_y << ", " << bounds.lower_z 
+	          << "] to [" << bounds.upper_x << ", " << bounds.upper_y << ", " << bounds.upper_z << "]" << std::endl;
+	
+	// Test a simple ray intersection
+	RTCRay testRay;
+	testRay.org_x = 0.0f; testRay.org_y = 0.0f; testRay.org_z = 0.0f;
+	testRay.dir_x = 0.0f; testRay.dir_y = 0.0f; testRay.dir_z = 1.0f;
+	testRay.tfar = 1000.0f; testRay.tnear = EPS; testRay.time = 0; testRay.id = 0; testRay.flags = -1;
+	
+	RTCRayHit testQuery;
+	RTCIntersectContext testContext;
+	rtcInitIntersectContext(&testContext);
+	testQuery.ray = testRay;
+	testQuery.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+	testQuery.hit.primID = RTC_INVALID_GEOMETRY_ID;
+	
+	rtcIntersect1(eScene, &testContext, &testQuery);
+	std::cout << "Test ray intersection result: geomID=" << testQuery.hit.geomID 
+	          << " (RTC_INVALID_GEOMETRY_ID=" << RTC_INVALID_GEOMETRY_ID << ")" << std::endl;
+	
 	loadColormapFromFile(path("../") / s.colormapFile);
 	float* tsky = loadSkyTemp(path("../") / s.skyTempsFile);
 	tmin = s.tmin; tmax = s.tmax;

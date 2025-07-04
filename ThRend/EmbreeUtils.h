@@ -53,17 +53,32 @@ RTCScene buildSceneEmbree(std::vector<glm::vec3> &sc_vertices,
 							std::vector<int> &sc_quads,
 							std::vector<int> &matIDs,
 							std::vector<float> &temps) {
+	std::cout << "Building Embree scene..." << std::endl;
 	RTCDevice device = rtcNewDevice("threads=0");
+	
+	// Check for device errors
+	RTCError deviceError = rtcGetDeviceError(device);
+	if (deviceError != RTC_ERROR_NONE) {
+		std::cout << "Device error: " << deviceError << std::endl;
+	}
+	
 	//	rtcSetDeviceProperty(device, RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED, 1);
 	//	ssize_t pr = rtcGetDeviceProperty(device, RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED);
 	//	std::cout << "BFC prop is " <<  pr<<  " \n";
 	eScene = rtcNewScene(device);
+	
+	// Check for scene creation errors
+	RTCError sceneError = rtcGetDeviceError(device);
+	if (sceneError != RTC_ERROR_NONE) {
+		std::cout << "Scene creation error: " << sceneError << std::endl;
+	}
 
 	RTCBuffer vertices =
 		rtcNewSharedBuffer(device, sc_vertices.data(),
 		sizeof(glm::vec3) * sc_vertices.size());
 
 	if (sc_triangles.size() > 0) {
+		std::cout << "Adding " << sc_triangles.size() / 3 << " triangles..." << std::endl;
 		RTCGeometry triGeom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
 		rtcSetGeometryBuffer(triGeom, RTC_BUFFER_TYPE_VERTEX, 0,
 			RTC_FORMAT_FLOAT3, vertices, 0, sizeof(glm::vec3),
@@ -86,8 +101,10 @@ RTCScene buildSceneEmbree(std::vector<glm::vec3> &sc_vertices,
 		rtcCommitGeometry(triGeom);
 		triID = rtcAttachGeometry(eScene, triGeom);
 		triOffset = sc_triangles.size() / 3;
+		std::cout << "Triangles attached with ID: " << triID << std::endl;
 	}
 	if (sc_quads.size() > 0) {
+		std::cout << "Adding " << sc_quads.size() / 4 << " quads..." << std::endl;
 		RTCGeometry quadGeom =
 			rtcNewGeometry(device, RTC_GEOMETRY_TYPE_QUAD);
 		rtcSetGeometryBuffer(quadGeom, RTC_BUFFER_TYPE_VERTEX, 0,
@@ -108,9 +125,19 @@ RTCScene buildSceneEmbree(std::vector<glm::vec3> &sc_vertices,
 
 		rtcCommitGeometry(quadGeom);
 		quadID = rtcAttachGeometry(eScene, quadGeom);
+		std::cout << "Quads attached with ID: " << quadID << std::endl;
 	}
 
+	std::cout << "Committing scene..." << std::endl;
 	rtcCommitScene(eScene);
+	
+	// Check for commit errors
+	RTCError commitError = rtcGetDeviceError(device);
+	if (commitError != RTC_ERROR_NONE) {
+		std::cout << "Scene commit error: " << commitError << std::endl;
+	} else {
+		std::cout << "Scene committed successfully" << std::endl;
+	}
 
 	return eScene;
 }
